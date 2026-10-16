@@ -92,7 +92,7 @@ Step "Fetching fonts"
 if ($LASTEXITCODE -ne 0) { throw "Couldn't download the fonts" }
 
 Step "Checking that Nacre imports"
-& $vpy -c "import nacre.app"
+& $vpy -c "import sys; sys.path.insert(0, sys.argv[1]); import nacre.app" $Root   # cwd may be anywhere (e.g. system32)
 if ($LASTEXITCODE -ne 0) { throw "Nacre failed to import; see the error above" }
 
 # ── Icon + shortcuts ──────────────────────────────────────────────────────────
