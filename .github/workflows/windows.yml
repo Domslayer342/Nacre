@@ -46,18 +46,14 @@ jobs:
 
       - name: Smoke test
         run: |
-          $out = (New-Item -ItemType Directory -Force smoke).FullName
-          foreach ($v in "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME") {
-            Set-Item "env:$v" (New-Item -ItemType Directory -Force (Join-Path $env:RUNNER_TEMP $v)).FullName
-          }
-          $env:NACRE_SMOKE_OUT = $out
-          $env:NACRE_SCRIPT = (Resolve-Path packaging/smoke.py).Path
-          $p = Start-Process dist/Nacre/Nacre.exe -PassThru
-          if (-not $p.WaitForExit(150000)) { $p.Kill(); Write-Host "::warning::Nacre did not quit in time" }
-          $crash = Join-Path $env:XDG_CACHE_HOME "nacre\crash.log"
-          if (Test-Path $crash) { Copy-Item $crash $out; Get-Content $crash }
-          if (-not (Test-Path (Join-Path $out "smoke.txt"))) { throw "Smoke test failed: Nacre never reported back" }
-          Get-Content (Join-Path $out "smoke.txt")
+          # the bundled exe as shipped, then two variants that help pin down a failure
+          $exe = & packaging/smoke.ps1 exe dist\Nacre\Nacre.exe
+          $env:NACRE_NO_WINFRAME = "1"
+          $nowf = & packaging/smoke.ps1 exe-no-winframe dist\Nacre\Nacre.exe
+          Remove-Item env:NACRE_NO_WINFRAME
+          $src = & packaging/smoke.ps1 source python run.py
+          Write-Host "exe=$exe exe-no-winframe=$nowf source=$src"
+          if (-not $exe) { throw "Smoke test failed: Nacre.exe never reported back" }
 
       - name: Upload smoke test results
         if: always()

@@ -5,10 +5,11 @@ animate. We add the normal frame styles back and answer WM_NCCALCSIZE so the cli
 window: no visible frame, but Windows treats it as a real top-level window again (snap, animations, shadow).
 """
 import ctypes
+import os
 import sys
 from ctypes import wintypes
 
-ENABLED = sys.platform == "win32"
+ENABLED = sys.platform == "win32" and not os.environ.get("NACRE_NO_WINFRAME")
 
 GWL_STYLE = -16
 WS_THICKFRAME, WS_CAPTION, WS_MAXIMIZEBOX, WS_MINIMIZEBOX = 0x00040000, 0x00C00000, 0x00010000, 0x00020000
