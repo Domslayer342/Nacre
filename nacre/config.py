@@ -11,6 +11,16 @@ def _xdg(var, fallback):
     return os.path.join(os.environ.get(var) or os.path.expanduser(fallback), "nacre")
 
 
+def launch_command():
+    """How to start Nacre again: the AppImage / bundled binary when packaged, else `python run.py`."""
+    import shlex
+    import sys
+    if getattr(sys, "frozen", False):
+        return shlex.quote(os.environ.get("APPIMAGE") or sys.executable)
+    run = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "run.py")
+    return f"{shlex.quote(sys.executable)} {shlex.quote(run)}"
+
+
 CONFIG_DIR = _xdg("XDG_CONFIG_HOME", "~/.config")
 DATA_DIR = _xdg("XDG_DATA_HOME", "~/.local/share")
 CACHE_DIR = _xdg("XDG_CACHE_HOME", "~/.cache")

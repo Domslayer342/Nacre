@@ -1,6 +1,7 @@
-# PyInstaller spec for the Windows build: `pyinstaller packaging/nacre.spec` from the repo root.
-# Produces dist/Nacre/Nacre.exe (one folder: Python, Qt and Chromium included, nothing to install).
+# PyInstaller spec (Windows and Linux): `pyinstaller packaging/nacre.spec` from the repo root.
+# Produces dist/Nacre/Nacre(.exe): one folder with Python, Qt and Chromium included, nothing to install.
 import os
+import sys
 
 from PyInstaller.utils.hooks import collect_submodules
 
@@ -17,9 +18,9 @@ a = Analysis(
     datas=datas,
     # nacre imports most modules lazily; qrcode/adblock/psutil come from pip in the build environment
     hiddenimports=collect_submodules("nacre") + collect_submodules("qrcode") + ["adblock", "psutil"],
-    excludes=["tkinter", "PyQt6.QtDBus"],
+    excludes=["tkinter"] + (["PyQt6.QtDBus"] if sys.platform == "win32" else []),     # Linux needs D-Bus (MPRIS)
 )
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Nacre", console=False,
-          icon=os.path.join(ROOT, "assets", "nacre.ico"))
+          icon=os.path.join(ROOT, "assets", "nacre.ico") if sys.platform == "win32" else None)
 coll = COLLECT(exe, a.binaries, a.datas, name="Nacre")

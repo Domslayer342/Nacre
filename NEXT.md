@@ -100,3 +100,18 @@ path kept in app['lnk']. Google quirk UA claims Firefox on Windows there. Audio 
 8. Zapper: animate ads present at first load once they scroll into view.
 9. Packaging: PKGBUILD / AppImage; `git init` + a headless smoke-test script around the NACRE_SCRIPT harness.
 10. Perf pass for the slow connection: lighter list updates, smaller NTP payload, prefetch off by default.
+
+## IN PROGRESS (2026-10-16): standalone Windows build on GitHub Actions
+- .github/workflows/windows.yml: PyInstaller (packaging/nacre.spec) → smoke test (packaging/smoke.ps1 + smoke.py)
+  → Inno Setup installer (packaging/nacre.iss) + portable zip; tag v* publishes a Release. See memory
+  [[github-actions-packaging]] for the recipe.
+- BLOCKER: on the windows-latest runner Nacre crashes inside BrowserWindow.show() (access violation, exit
+  0xC000041D) — the built exe AND `python run.py`, with or without winframe. Diagnostic run 38872930819 tests:
+  no native hooks (NACRE_NO_WINFRAME + NACRE_NO_MEDIAKEYS), QSG_RHI_BACKEND=opengl, and commit d3eaa8b (the
+  version the user's VM ran fine). Read it with:
+  gh run view 38872930819 -R Domslayer342/Nacre --log | grep -E "\] exit=|no-native-hooks="
+  If old-commit also crashes → runner graphics issue (try opengl / software); if only HEAD crashes → bisect
+  the Windows-pass changes (MediaKeys filter, accent poll, nativeEvent).
+- Not yet pushed into the workflow: a Linux job (AppImage + tar.gz). Ready: packaging/smoke.sh (xvfb), spec is
+  cross-platform, config.launch_command() handles $APPIMAGE / frozen for .desktop entries.
+- install-windows.ps1 font-in-use error is fixed (user hit it); user should re-run the installer.

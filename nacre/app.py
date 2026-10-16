@@ -13,7 +13,7 @@ from PyQt6.QtWebEngineCore import QWebEngineProfile, QWebEngineScript, QWebEngin
 from PyQt6.QtWidgets import QApplication, QFileDialog, QMenu
 from PyQt6 import QtWebEngineWidgets  # noqa: F401  (must load before QApplication)
 
-from .config import CACHE_DIR, DATA_DIR, cfg, session
+from .config import CACHE_DIR, DATA_DIR, cfg, launch_command, session
 
 
 def register_scheme():
@@ -239,7 +239,7 @@ Type=Application
 Name=Nacre
 GenericName=Web Browser
 Comment=A Material You web browser
-Exec={sys.executable} {os.path.join(root, "run.py")} %U
+Exec={launch_command()} %U
 Icon=nacre
 Terminal=false
 Categories=Network;WebBrowser;

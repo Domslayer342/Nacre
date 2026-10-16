@@ -10,7 +10,7 @@ from PyQt6.QtGui import QColor, QIcon, QImage, QPixmap
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PyQt6.QtWidgets import QLabel
 
-from .config import DATA_DIR, JsonStore
+from .config import DATA_DIR, JsonStore, launch_command
 from .widgets import Button, Flyout, Label, Switch, TextField, guard, hbox, painter
 
 apps = JsonStore(os.path.join(DATA_DIR, "apps.json"), [])
@@ -113,8 +113,7 @@ def write_desktop(app):
     if sys.platform == "win32":
         return _write_lnk(app)
     os.makedirs(os.path.dirname(desktop_path(app)), exist_ok=True)
-    run = os.path.join(ROOT, "run.py")
-    exe = f"{sys.executable} {run} --app {app['id']}" if app["window"] else f"{sys.executable} {run} {app['url']}"
+    exe = f"{launch_command()} --app {app['id']}" if app["window"] else f"{launch_command()} {app['url']}"
     with open(desktop_path(app), "w") as f:
         f.write(f"""[Desktop Entry]
 Type=Application
