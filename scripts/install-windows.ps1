@@ -99,7 +99,11 @@ New-Item -ItemType Directory -Force -Path $userFonts | Out-Null
 if (-not (Test-Path $fontKey)) { New-Item -Path $fontKey -Force | Out-Null }
 foreach ($f in Get-ChildItem -LiteralPath (Join-Path $Root "nacre\fonts") -Filter *.ttf) {
     $dest = Join-Path $userFonts $f.Name
-    Copy-Item -LiteralPath $f.FullName -Destination $dest -Force
+    # an installed font is held open by Windows (and any app using it): keep the existing copy
+    if (-not (Test-Path -LiteralPath $dest)) {
+        try { Copy-Item -LiteralPath $f.FullName -Destination $dest -ErrorAction Stop }
+        catch { Write-Warning "Couldn't install $($f.Name): $($_.Exception.Message)"; continue }
+    }
     $name = if ($f.Name -like "Material*") { "Material Symbols Rounded (TrueType)" } else { "Rubik (TrueType)" }
     New-ItemProperty -Path $fontKey -Name $name -Value $dest -PropertyType String -Force | Out-Null
 }
