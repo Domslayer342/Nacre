@@ -243,6 +243,17 @@ StartupWMClass=nacre
     print(f"Installed {entry}")
 
 
+def windows_vm():
+    """True on a Windows virtual machine (VirtualBox, VMware, Hyper-V, QEMU/KVM, Parallels, Xen)."""
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\BIOS") as k:
+            ids = " ".join(str(winreg.QueryValueEx(k, v)[0]) for v in ("SystemManufacturer", "SystemProductName"))
+    except (ImportError, OSError):
+        return False
+    return bool(re.search(r"virtual|vmware|vbox|qemu|kvm|parallels|xen|bochs", ids, re.I))
+
+
 def load_fonts():
     """Rubik + Material Symbols from nacre/fonts (fetched by the install scripts), if they're there."""
     from PyQt6.QtGui import QFontDatabase
@@ -261,6 +272,9 @@ def main(argv=None):
     from .widevine import chromium_flag
     flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "--enable-smooth-scrolling --enable-quic")
     drm = chromium_flag()                              # Widevine (Netflix, Hulu, Spotify…) if a CDM is installed
+    gpu = cfg.get("web.gpu")
+    if gpu == "off" or (gpu == "auto" and os.name == "nt" and windows_vm()):
+        flags += " --disable-gpu --disable-gpu-compositing"     # VMs' virtual GPUs give Chromium black pages
     os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = f"{flags} {drm}".strip()
     QApplication.setApplicationName("Nacre")
     QApplication.setDesktopFileName("nacre")

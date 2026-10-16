@@ -377,7 +377,9 @@ class SettingsPage(QWidget):
                  SetRow("rounded_corner", "Roundness", None,
                         seg("ui.roundness", [(0.5, "Subtle"), (1.0, "Default"), (1.4, "Round")])),
                  SetRow("contrast_square", "Force dark web pages", "Chromium's automatic dark mode (restart to apply)",
-                        sw("web.force_dark")))
+                        sw("web.force_dark")),
+                 SetRow("memory", "Hardware acceleration", "Turn off if pages show up black or blank (restart to apply)",
+                        seg("web.gpu", [("auto", "Auto"), ("on", "On"), ("off", "Off")])))
 
         # Toolbar
         self.section("Toolbar")

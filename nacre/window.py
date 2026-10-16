@@ -1111,6 +1111,8 @@ class BrowserWindow(QWidget):
             self.reader_mode(t)
         elif k == "task_manager":
             self.new_tab("nacre://tasks")
+        elif k == "settings":
+            self.new_tab("nacre://settings")
         elif k == "clear_data":
             self.snack.show_msg("Delete history, cookies and cache?", "Delete", self.clear_data, 7000)
         elif k == "print" and t:

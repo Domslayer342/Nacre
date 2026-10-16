@@ -89,6 +89,7 @@ TOOLBAR_ITEMS = {
         "history": ("history", "History", True),
         "downloads": ("download", "Downloads", True),
         "clear_data": ("delete", "Delete browsing data", True),
+        "settings": ("settings", "Settings", True),
     },
     "Tools and actions": {
         "print": ("print", "Print", True),
@@ -115,6 +116,7 @@ DEFAULTS = {
     "ui.frameless": True,
     "ui.floating_card": True,
     "web.force_dark": False,
+    "web.gpu": "auto",               # auto | on | off (auto = software rendering inside a Windows VM)
     "startup.mode": "newtab",        # newtab | restore | home
     "home.url": "nacre://newtab",
     "search.engine": "duckduckgo",
@@ -188,6 +190,7 @@ DEFAULTS = {
 for _items in TOOLBAR_ITEMS.values():
     for _k in _items:
         DEFAULTS["toolbar." + _k] = _k in ("home", "forward", "passwords", "history", "downloads", "qr", "adblock")
+DEFAULTS["toolbar.settings"] = os.name == "nt"        # Windows: until the menu flyout is adapted there
 
 
 class JsonStore(QObject):
