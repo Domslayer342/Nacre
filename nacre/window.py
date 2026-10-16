@@ -1301,12 +1301,13 @@ class BrowserWindow(QWidget):
             self._snappable = True
             winframe.install(self)                 # Aero Snap + window animations for the frameless window
 
-    def nativeEvent(self, event_type, message):
-        if self.frameless:
-            handled = winframe.native_event(self, event_type, message)
-            if handled:
-                return handled
-        return super().nativeEvent(event_type, message)
+    if winframe.ENABLED:                           # only Windows gets a Python hook on every native message
+        def nativeEvent(self, event_type, message):
+            if self.frameless:
+                handled = winframe.native_event(self, event_type, message)
+                if handled:
+                    return handled
+            return super().nativeEvent(event_type, message)
 
     def changeEvent(self, e):
         if e.type() == QEvent.Type.WindowStateChange:

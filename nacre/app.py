@@ -81,7 +81,7 @@ class Nacre(QObject):
         if sys.platform.startswith("linux"):
             from .mpris import Mpris
             self.mpris = Mpris(self, self.media)      # media keys / Plasma media controls
-        elif sys.platform == "win32":
+        elif sys.platform == "win32" and not os.environ.get("NACRE_NO_MEDIAKEYS"):
             from .winshell import MediaKeys
             self.mpris = MediaKeys(app, self.media)   # hardware media keys while a tab plays
         self.rpc = DiscordRPC(self)

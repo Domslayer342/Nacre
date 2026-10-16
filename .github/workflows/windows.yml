@@ -46,14 +46,23 @@ jobs:
 
       - name: Smoke test
         run: |
-          # the bundled exe as shipped, then two variants that help pin down a failure
           $exe = & packaging/smoke.ps1 exe dist\Nacre\Nacre.exe
-          $env:NACRE_NO_WINFRAME = "1"
-          $nowf = & packaging/smoke.ps1 exe-no-winframe dist\Nacre\Nacre.exe
-          Remove-Item env:NACRE_NO_WINFRAME
-          $src = & packaging/smoke.ps1 source python run.py
-          Write-Host "exe=$exe exe-no-winframe=$nowf source=$src"
-          if (-not $exe) { throw "Smoke test failed: Nacre.exe never reported back" }
+          if (-not $exe) {
+            # diagnose: which part breaks? (each variant runs from source)
+            $env:NACRE_NO_WINFRAME = "1"; $env:NACRE_NO_MEDIAKEYS = "1"
+            $nohooks = & packaging/smoke.ps1 source-no-native-hooks python run.py
+            Remove-Item env:NACRE_NO_WINFRAME, env:NACRE_NO_MEDIAKEYS
+            $env:QSG_RHI_BACKEND = "opengl"
+            $gl = & packaging/smoke.ps1 source-opengl python run.py
+            Remove-Item env:QSG_RHI_BACKEND
+            git worktree add ..\old d3eaa8b 2>&1 | Out-Null
+            Copy-Item -Recurse nacre\fonts ..\old\nacre\fonts -ErrorAction SilentlyContinue
+            Push-Location ..\old
+            $old = & $env:GITHUB_WORKSPACE\packaging\smoke.ps1 old-d3eaa8b python run.py
+            Pop-Location
+            Write-Host "no-native-hooks=$nohooks opengl=$gl old-commit=$old"
+            throw "Smoke test failed: Nacre.exe never reported back"
+          }
 
       - name: Upload smoke test results
         if: always()
