@@ -1,0 +1,6 @@
+PyQt6>=6.8
+PyQt6-WebEngine>=6.8
+materialyoucolor>=2.0
+cryptography>=41
+# Linux x86_64 uses the copy bundled in nacre/_vendor; everything else gets it from PyPI
+adblock>=0.6; sys_platform != "linux" or platform_machine != "x86_64"

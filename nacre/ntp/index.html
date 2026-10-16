@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><title>New Tab</title>
+<style>:root{%VARS%}</style>
+<link rel="stylesheet" href="nacre://newtab/ntp.css">
+</head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="goo" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+<feGaussianBlur in="SourceGraphic" stdDeviation="14" result="b"/>
+<feColorMatrix in="b" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 36 -15"/></filter></svg>
+<div id="bgimg"></div><canvas id="bg"></canvas><div id="dim"></div>
+<main><section id="center"></section><section id="cards"></section></main>
+<button id="gear" class="fab" title="Customize new tab">settings</button>
+<aside id="sheet" hidden></aside>
+<div id="scrim"></div><div id="dlg" hidden></div>
+<script>window.STATE = %STATE%;</script>
+<script src="nacre://newtab/bg.js"></script>
+<script src="nacre://newtab/ntp.js"></script>
+</body></html>

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+nacre/fonts/
+assets/nacre.ico
+*.part
