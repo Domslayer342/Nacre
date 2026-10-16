@@ -60,7 +60,13 @@ Settings → Appearance → Hardware acceleration (auto/on/off). Toolbar item "s
 User's guidance: only change things for Windows when they actually don't work there.
 Icons: Chromium only sees installed fonts, so ntp.css has @font-face local() → nacre://newtab/fonts/{symbols,rubik}.ttf
 (services.bundled_font from nacre/fonts); install-windows.ps1 installs both per user (HKCU Fonts), build.sh into
-~/.local/share/fonts when fc-list lacks them. Confirmed by the user: Windows works in a VM (slow, software rendering). Ideas: Windows Hello / CredUI for the reveal gate, SMTC media keys, tasks via psutil.
+~/.local/share/fonts when fc-list lacks them. Confirmed by the user: Windows works in a VM (slow, software rendering).
+System accent (was "KDE accent"; saved "kde" migrates to "system"): theme.read_system_accent() = Windows DWM
+AccentColor (polled every 3 s) | XDG portal org.freedesktop.appearance accent-color (live via SettingChanged; PyQt
+needs a real QDBusMessage slot, defined only when QtDBus exists) → kdeglobals → GNOME gsettings.
+winframe.py (Windows only, UNTESTED on Windows): re-adds WS_THICKFRAME|WS_CAPTION|min/max boxes to the frameless
+window and answers WM_NCCALCSIZE (client = whole window, inset by the frame when maximized) so Aero Snap works.
+Title buttons: 40 px, per-glyph icon sizes (remove 22, crop_square 18, close 24) so they look the same weight. Ideas: Windows Hello / CredUI for the reveal gate, SMTC media keys, tasks via psutil.
 
 ## Unverified (needs the user)
 - Google sign-in quirk at the real password step; PAM success path with the real password.

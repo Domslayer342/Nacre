@@ -1,11 +1,14 @@
 """Material You colour engine, motion tokens and a shared animation ticker."""
 import configparser
 import os
+import shutil
+import subprocess
+import sys
 import time
 from functools import lru_cache
 
 from PyQt6.QtCore import (QAbstractAnimation, QEasingCurve, QFileSystemWatcher, QObject, QPointF, QRectF, Qt, QTimer,
-                          QVariantAnimation, pyqtSignal)
+                          QVariantAnimation, pyqtSignal, pyqtSlot)
 from PyQt6.QtGui import QColor, QFont, QGuiApplication, QImage, QPainter, QPalette, QPixmap, QIcon
 from PyQt6.QtWidgets import QApplication
 
@@ -181,6 +184,65 @@ def read_kde_accent():
     return None
 
 
+def read_windows_accent():
+    """Windows' accent colour (Settings → Personalisation → Colours)."""
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\DWM") as k:
+            try:
+                v = winreg.QueryValueEx(k, "AccentColor")[0]                  # 0xAABBGGRR
+                return QColor(v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF).rgba()
+            except OSError:
+                v = winreg.QueryValueEx(k, "ColorizationColor")[0]            # 0xAARRGGBB
+                return (v & 0xFFFFFF) | 0xFF000000
+    except (ImportError, OSError):
+        return None
+
+
+def read_portal_accent():
+    """XDG desktop portal accent (KDE Plasma 6, GNOME 47+, and other desktops with a portal backend)."""
+    try:
+        from PyQt6.QtDBus import QDBusConnection, QDBusMessage
+    except ImportError:
+        return None
+    m = QDBusMessage.createMethodCall("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop",
+                                      "org.freedesktop.portal.Settings", "ReadOne")
+    m.setArguments(["org.freedesktop.appearance", "accent-color"])
+    r = QDBusConnection.sessionBus().call(m, timeout=800)
+    try:
+        rgb = r.arguments()[0]
+        if hasattr(rgb, "variant"):
+            rgb = rgb.variant()
+        rgb = [float(x) for x in rgb][:3]
+    except (IndexError, TypeError, ValueError):
+        return None
+    if len(rgb) != 3 or not all(0.0 <= x <= 1.0 for x in rgb):         # out of range = "no accent set"
+        return None
+    return QColor.fromRgbF(*rgb).rgba() | 0xFF000000
+
+
+GNOME_ACCENTS = {"blue": "#3584e4", "teal": "#2190a4", "green": "#3a944a", "yellow": "#c88800",
+                 "orange": "#ed5b00", "red": "#e62d42", "pink": "#d56199", "purple": "#9141ac", "slate": "#6f8396"}
+
+
+def read_gnome_accent():
+    if not shutil.which("gsettings"):
+        return None
+    try:
+        out = subprocess.run(["gsettings", "get", "org.gnome.desktop.interface", "accent-color"],
+                             capture_output=True, text=True, timeout=1).stdout.strip().strip("'")
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return QColor(GNOME_ACCENTS[out]).rgba() if out in GNOME_ACCENTS else None
+
+
+def read_system_accent():
+    """The desktop's accent colour: Windows, then the XDG portal, KDE's kdeglobals or GNOME's setting."""
+    if sys.platform == "win32":
+        return read_windows_accent()
+    return read_portal_accent() or read_kde_accent() or read_gnome_accent()
+
+
 # ── theme manager ─────────────────────────────────────────────────────────────
 class Theme(QObject):
     changed = pyqtSignal()          # every animation frame
@@ -194,9 +256,16 @@ class Theme(QObject):
         self.t = 1.0
 
     def init(self):
-        self.kde_seed = read_kde_accent()
+        for k in ("theme.source", "theme.fallback"):          # "kde" became "system"
+            if cfg.get(k) == "kde":
+                cfg.set(k, "system")
+        self.system_seed = read_system_accent()
         self._watch = QFileSystemWatcher([os.path.expanduser("~/.config/kdeglobals")], self)
         self._watch.fileChanged.connect(self._kde_changed)
+        self._watch_portal()
+        if sys.platform == "win32":                           # no change signal we can hook cheaply: poll the registry
+            self._accent_poll = QTimer(self, interval=3000, timeout=self._accent_changed)
+            self._accent_poll.start()
         QGuiApplication.styleHints().colorSchemeChanged.connect(lambda *_: self.refresh())
         cfg.changed.connect(lambda k, v: k.startswith(("theme.", "ui.roundness")) and self.refresh())
         self.refresh(smooth=False)
@@ -204,17 +273,40 @@ class Theme(QObject):
     def _kde_changed(self, path):
         if path not in self._watch.files() and os.path.exists(path):
             self._watch.addPath(path)       # file got replaced, re-arm
-        self.kde_seed = read_kde_accent()
-        self.refresh()
+        self._accent_changed()
+
+    def _watch_portal(self):
+        try:
+            from PyQt6.QtDBus import QDBusConnection, QDBusMessage
+        except ImportError:                                   # no D-Bus (Windows)
+            return
+        accent_changed = self._accent_changed
+
+        class Receiver(QObject):
+            @pyqtSlot(QDBusMessage)
+            def changed(self, msg):
+                args = msg.arguments()
+                if args[:2] == ["org.freedesktop.appearance", "accent-color"]:
+                    accent_changed()
+
+        self._portal = Receiver(self)
+        QDBusConnection.sessionBus().connect("", "/org/freedesktop/portal/desktop", "org.freedesktop.portal.Settings",
+                                             "SettingChanged", self._portal.changed)
+
+    def _accent_changed(self):
+        seed = read_system_accent()
+        if seed != self.system_seed:
+            self.system_seed = seed
+            self.refresh()
 
     # sources
     def base_seed(self):
         src = cfg.get("theme.source")
         if src == "custom":
             return QColor(cfg.get("theme.custom")).rgba()
-        if src == "kde" or (src == "website" and cfg.get("theme.fallback") == "kde"):
-            if self.kde_seed:
-                return self.kde_seed
+        if src in ("system", "kde") or (src == "website" and cfg.get("theme.fallback") in ("system", "kde")):
+            if self.system_seed:
+                return self.system_seed
         return QColor(cfg.get("theme.preset")).rgba()
 
     def seed(self):

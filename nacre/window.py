@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (QCompleter, QFileDialog, QHBoxLayout, QLabel, QLine
                              QVBoxLayout, QWidget)
 
 from .config import SEARCH_ENGINES, TOOLBAR_ITEMS, bookmarks, cfg, history, reading
-from . import autofill, pwa
+from . import autofill, pwa, winframe
 from .icon import app_icon
 from .media import INJECT_JS, MediaFlyout
 from .pages import NATIVE, make_page
@@ -629,10 +629,11 @@ class BrowserWindow(QWidget):
         top.addWidget(self.strip, 1)
         self.wc = []
         if self.frameless:
-            for icon, tip, fn in (("remove", "Minimize", self.showMinimized),
-                                  ("crop_square", "Maximize", self.toggle_max),
-                                  ("close", "Close", self.close)):
-                b = Button(icon, size=34, tip=tip, icon_px=18)
+            # the glyphs fill their em box differently: close is small, crop_square is big, so size them per icon
+            for icon, px, tip, fn in (("remove", 22, "Minimize", self.showMinimized),
+                                      ("crop_square", 18, "Maximize", self.toggle_max),
+                                      ("close", 24, "Close", self.close)):
+                b = Button(icon, size=40, tip=tip, icon_px=px)
                 b.clicked.connect(fn)
                 top.addWidget(b, 0, Qt.AlignmentFlag.AlignVCenter)
                 self.wc.append(b)
@@ -1293,6 +1294,19 @@ class BrowserWindow(QWidget):
             self.wc[1].set_icon("filter_none" if self.isMaximized() else "crop_square")
         self.card.place_corners()
         self.update()
+
+    def showEvent(self, e):
+        super().showEvent(e)
+        if self.frameless and winframe.ENABLED and not getattr(self, "_snappable", False):
+            self._snappable = True
+            winframe.install(self)                 # Aero Snap + window animations for the frameless window
+
+    def nativeEvent(self, event_type, message):
+        if self.frameless:
+            handled = winframe.native_event(self, event_type, message)
+            if handled:
+                return handled
+        return super().nativeEvent(event_type, message)
 
     def changeEvent(self, e):
         if e.type() == QEvent.Type.WindowStateChange:

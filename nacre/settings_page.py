@@ -339,10 +339,10 @@ class SettingsPage(QWidget):
 
         # Appearance
         self.section("Appearance")
-        src = seg("theme.source", [("website", "Website"), ("kde", "KDE accent"), ("preset", "Palette"),
+        src = seg("theme.source", [("website", "Website"), ("system", "System accent"), ("preset", "Palette"),
                                    ("custom", "Custom")])
         self.fallback = SetRow("format_color_fill", "When a site has no colour", None,
-                               seg("theme.fallback", [("kde", "KDE accent"), ("preset", "Palette")]))
+                               seg("theme.fallback", [("system", "System accent"), ("preset", "Palette")]))
         sw_wrap = QWidget()
         fl = FlowLayout(sw_wrap, 4)
         for h in PRESETS:

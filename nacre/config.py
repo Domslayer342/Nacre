@@ -105,8 +105,8 @@ TOOLBAR_ITEMS = {
 
 DEFAULTS = {
     "theme.mode": "system",          # system | light | dark
-    "theme.source": "website",       # website | kde | preset | custom
-    "theme.fallback": "kde",         # kde | preset (when a site has no colour)
+    "theme.source": "website",       # website | system | preset | custom
+    "theme.fallback": "system",      # system | preset (when a site has no colour)
     "theme.preset": "#6750A4",
     "theme.custom": "#3F6EE8",
     "theme.variant": "tonal_spot",
