@@ -57,7 +57,10 @@ adblock comes from PyPI. The frameless window is opaque on Windows
 path on Linux with NACRE_OPAQUE=1. Pages were then black on the user's Windows (likely a VM GPU):
 app.windows_vm() (BIOS registry strings) → --disable-gpu --disable-gpu-compositing when web.gpu is auto;
 Settings → Appearance → Hardware acceleration (auto/on/off). Toolbar item "settings" (default on for Windows only).
-User's guidance: only change things for Windows when they actually don't work there. Ideas: Windows Hello / CredUI for the reveal gate, SMTC media keys, tasks via psutil.
+User's guidance: only change things for Windows when they actually don't work there.
+Icons: Chromium only sees installed fonts, so ntp.css has @font-face local() → nacre://newtab/fonts/{symbols,rubik}.ttf
+(services.bundled_font from nacre/fonts); install-windows.ps1 installs both per user (HKCU Fonts), build.sh into
+~/.local/share/fonts when fc-list lacks them. Confirmed by the user: Windows works in a VM (slow, software rendering). Ideas: Windows Hello / CredUI for the reveal gate, SMTC media keys, tasks via psutil.
 
 ## Unverified (needs the user)
 - Google sign-in quirk at the real password step; PAM success path with the real password.
@@ -72,8 +75,6 @@ User's guidance: only change things for Windows when they actually don't work th
 - Theme is global (follows the active window's tab).
 - Seen while taking screenshots (check): a settings page opened right after switching light→dark had dim,
   low-contrast titles (widgets built mid theme transition keep stale colours?). Launching in dark was fine.
-- Seen while taking screenshots (check): the weather card on the startup new tab stayed "Loading…" for 12 s+,
-  but loaded right after a reload. Maybe the first /api/weather request fires before something is ready.
 
 ## Possible next work (ideas, not requested yet)
 1. Load uBO resources.json (scriptlets) so +js rules work; cache it like the lists.

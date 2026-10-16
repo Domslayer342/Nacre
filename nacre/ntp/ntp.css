@@ -1,4 +1,9 @@
+@font-face{font-family:'Material Symbols Rounded';font-style:normal;font-weight:100 700;font-display:block;
+ src:local('Material Symbols Rounded'),url(/fonts/symbols.ttf) format('truetype')}
+@font-face{font-family:Rubik;font-style:normal;font-weight:300 900;
+ src:local('Rubik'),url(/fonts/rubik.ttf) format('truetype')}
 [hidden]{display:none!important}
+*{scrollbar-width:thin;scrollbar-color:var(--outline) transparent}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Rubik,system-ui,sans-serif;overflow-x:hidden;
  transition:background .5s,color .5s}

@@ -696,6 +696,19 @@ class Downloads(QObject):
 # ── nacre:// ──────────────────────────────────────────────────────────────────
 NTP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ntp")
 NTP_STATIC = {"/ntp.js": b"text/javascript", "/bg.js": b"text/javascript", "/ntp.css": b"text/css"}
+# bundled fonts (nacre/fonts, fetched by the install scripts) for when they aren't installed system-wide
+FONT_FILES = {"/fonts/rubik.ttf": "Rubik", "/fonts/symbols.ttf": "MaterialSymbolsRounded"}
+_font_cache = {}
+
+
+def bundled_font(path):
+    if path not in _font_cache:
+        d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+        name = next((n for n in (sorted(os.listdir(d)) if os.path.isdir(d) else [])
+                     if n.startswith(FONT_FILES[path] + "[") or n.startswith(FONT_FILES[path] + ".")), None)
+        with open(os.path.join(d, name), "rb") if name else open(os.devnull, "rb") as f:
+            _font_cache[path] = f.read() or None
+    return _font_cache[path]
 BG_TYPES = {"image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp", "image/avif": "avif",
             "image/bmp": "bmp", "image/svg+xml": "svg"}
 
@@ -861,6 +874,9 @@ class NacreScheme(QWebEngineUrlSchemeHandler):
         if path in NTP_STATIC:
             with open(os.path.join(NTP_DIR, path[1:]), "rb") as f:
                 return self._reply(job, f.read(), NTP_STATIC[path])
+        if path in FONT_FILES:
+            data = bundled_font(path)
+            return self._reply(job, data, b"font/ttf") if data else job.fail(job.Error.UrlNotFound)
         if path == "/bg":
             p = bg_path()
             if not p or not os.path.exists(p):

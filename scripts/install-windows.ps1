@@ -91,6 +91,19 @@ Step "Fetching fonts"
 & $vpy (Join-Path $Root "scripts\fetch_fonts.py")
 if ($LASTEXITCODE -ne 0) { throw "Couldn't download the fonts" }
 
+# install them for this user too, so web pages (reader mode, autofill menus) get the icons and Rubik
+Step "Installing fonts for $env:USERNAME"
+$userFonts = Join-Path $env:LOCALAPPDATA "Microsoft\Windows\Fonts"
+$fontKey = "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts"
+New-Item -ItemType Directory -Force -Path $userFonts | Out-Null
+if (-not (Test-Path $fontKey)) { New-Item -Path $fontKey -Force | Out-Null }
+foreach ($f in Get-ChildItem -LiteralPath (Join-Path $Root "nacre\fonts") -Filter *.ttf) {
+    $dest = Join-Path $userFonts $f.Name
+    Copy-Item -LiteralPath $f.FullName -Destination $dest -Force
+    $name = if ($f.Name -like "Material*") { "Material Symbols Rounded (TrueType)" } else { "Rubik (TrueType)" }
+    New-ItemProperty -Path $fontKey -Name $name -Value $dest -PropertyType String -Force | Out-Null
+}
+
 Step "Checking that Nacre imports"
 & $vpy -c "import sys; sys.path.insert(0, sys.argv[1]); import nacre.app" $Root   # cwd may be anywhere (e.g. system32)
 if ($LASTEXITCODE -ne 0) { throw "Nacre failed to import; see the error above" }

@@ -37,6 +37,16 @@ fi
 
 echo "Fetching fonts…"
 "$VPY" scripts/fetch_fonts.py
+# web pages (reader mode, autofill menus) need them installed, not just loaded by Nacre
+if command -v fc-list >/dev/null; then
+  for pair in "Rubik:Rubik" "Material Symbols Rounded:MaterialSymbolsRounded"; do
+    fam=${pair%%:*} file=${pair#*:}
+    if ! fc-list | grep -q "$fam"; then
+      mkdir -p ~/.local/share/fonts && cp nacre/fonts/"$file"*.ttf ~/.local/share/fonts/ && echo "  installed $fam"
+    fi
+  done
+  fc-cache -f ~/.local/share/fonts >/dev/null 2>&1 || true
+fi
 
 echo "Checking that Nacre imports…"
 "$VPY" -c "import nacre.app"
