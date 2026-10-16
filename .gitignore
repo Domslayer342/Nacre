@@ -5,3 +5,6 @@ venv/
 nacre/fonts/
 assets/nacre.ico
 *.part
+dist/
+build/
+smoke/

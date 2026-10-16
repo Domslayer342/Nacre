@@ -10,6 +10,7 @@ from PyQt6.QtCore import QAbstractNativeEventFilter
 from PyQt6.QtGui import QImage
 
 ENABLED = sys.platform == "win32"
+FROZEN = getattr(sys, "frozen", False)                 # the PyInstaller build (Nacre.exe)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RUN = os.path.join(ROOT, "run.py")
 PROG_ID = "NacreHTML"
@@ -21,6 +22,11 @@ def gui_python():
     exe = sys.executable
     w = os.path.join(os.path.dirname(exe), "pythonw.exe")
     return w if os.path.exists(w) else exe
+
+
+def launcher():
+    """(program, leading args) that start Nacre: Nacre.exe when bundled, else pythonw.exe run.py."""
+    return (sys.executable, []) if FROZEN else (gui_python(), [f'"{RUN}"'])
 
 
 def start_menu():
@@ -39,8 +45,9 @@ def to_ico(src, dest):
 def make_shortcut(lnk, args, icon=None, description=""):
     """Create/replace a .lnk that runs Nacre's run.py with `args` (WScript.Shell through PowerShell)."""
     os.makedirs(os.path.dirname(lnk), exist_ok=True)
-    env = dict(os.environ, N_LNK=lnk, N_EXE=gui_python(), N_ARGS=" ".join([f'"{RUN}"'] + list(args)),
-               N_DIR=ROOT, N_ICON=icon or "", N_DESC=description)
+    exe, base = launcher()
+    env = dict(os.environ, N_LNK=lnk, N_EXE=exe, N_ARGS=" ".join(base + list(args)),
+               N_DIR=os.path.dirname(exe) if FROZEN else ROOT, N_ICON=icon or "", N_DESC=description)
     ps = ("$s=(New-Object -ComObject WScript.Shell).CreateShortcut($env:N_LNK);$s.TargetPath=$env:N_EXE;"
           "$s.Arguments=$env:N_ARGS;$s.WorkingDirectory=$env:N_DIR;$s.Description=$env:N_DESC;"
           "if($env:N_ICON){$s.IconLocation=$env:N_ICON};$s.Save()")
@@ -53,14 +60,16 @@ def register_browser(icon):
     """List Nacre under Settings → Apps → Default apps (Windows only lets the user pick the default)."""
     import ctypes
     import winreg
-    cmd = f'"{gui_python()}" "{RUN}" "%1"'
+    exe, base = launcher()
+    start = " ".join([f'"{exe}"'] + base)
+    cmd = f'{start} "%1"'
     keys = {
         rf"Software\Classes\{PROG_ID}": {"": "Nacre HTML Document"},
         rf"Software\Classes\{PROG_ID}\DefaultIcon": {"": f"{icon},0"},
         rf"Software\Classes\{PROG_ID}\shell\open\command": {"": cmd},
         r"Software\Clients\StartMenuInternet\Nacre": {"": "Nacre"},
         r"Software\Clients\StartMenuInternet\Nacre\DefaultIcon": {"": f"{icon},0"},
-        r"Software\Clients\StartMenuInternet\Nacre\shell\open\command": {"": f'"{gui_python()}" "{RUN}"'},
+        r"Software\Clients\StartMenuInternet\Nacre\shell\open\command": {"": start},
         r"Software\Clients\StartMenuInternet\Nacre\Capabilities": {
             "ApplicationName": "Nacre", "ApplicationDescription": "A Material You web browser",
             "ApplicationIcon": f"{icon},0"},
@@ -78,15 +87,39 @@ def register_browser(icon):
     ctypes.windll.shell32.SHChangeNotify(0x08000000, 0, None, None)          # SHCNE_ASSOCCHANGED
 
 
+def install_fonts():
+    """Rubik + Material Symbols for this user, so every web page (reader mode, autofill menus) can use them."""
+    import shutil
+    import winreg
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+    if not os.path.isdir(src):
+        return
+    dest = os.path.join(os.environ.get("LOCALAPPDATA", ""), r"Microsoft\Windows\Fonts")
+    os.makedirs(dest, exist_ok=True)
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows NT\CurrentVersion\Fonts") as k:
+        for name in os.listdir(src):
+            if not name.lower().endswith(".ttf"):
+                continue
+            target = os.path.join(dest, name)
+            if not os.path.exists(target):
+                shutil.copyfile(os.path.join(src, name), target)
+            label = "Material Symbols Rounded (TrueType)" if name.startswith("Material") else "Rubik (TrueType)"
+            winreg.SetValueEx(k, label, 0, winreg.REG_SZ, target)
+
+
 def install():
-    """`run.py --install-desktop` on Windows: Start menu shortcut + default-browser registration."""
+    """`run.py --install-desktop` on Windows: Start menu shortcut, fonts and default-browser registration."""
     from PyQt6.QtGui import QGuiApplication
     app = QGuiApplication.instance() or QGuiApplication(sys.argv[:1])      # QImage's ICO writer needs one
-    icon = to_ico(os.path.join(ROOT, "assets", "nacre.png"), os.path.join(ROOT, "assets", "nacre.ico"))
+    if FROZEN:
+        icon = sys.executable                      # Nacre.exe carries the icon
+    else:
+        icon = to_ico(os.path.join(ROOT, "assets", "nacre.png"), os.path.join(ROOT, "assets", "nacre.ico"))
     lnk = os.path.join(start_menu(), "Nacre.lnk")
     if not os.path.exists(lnk):
         make_shortcut(lnk, [], icon, "Nacre web browser")
     register_browser(icon or gui_python())
+    install_fonts()
     print("Nacre is in the Start menu and listed under Settings → Apps → Default apps.")
     del app
 
