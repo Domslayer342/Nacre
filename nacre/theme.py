@@ -260,7 +260,9 @@ class Theme(QObject):
             if cfg.get(k) == "kde":
                 cfg.set(k, "system")
         self.system_seed = read_system_accent()
-        self._watch = QFileSystemWatcher([os.path.expanduser("~/.config/kdeglobals")], self)
+        self._watch = QFileSystemWatcher(self)
+        if sys.platform != "win32":
+            self._watch.addPath(os.path.expanduser("~/.config/kdeglobals"))
         self._watch.fileChanged.connect(self._kde_changed)
         self._watch_portal()
         if sys.platform == "win32":                           # no change signal we can hook cheaply: poll the registry

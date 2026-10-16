@@ -1,5 +1,6 @@
 """Password manager UI: toolbar flyout + nacre://passwords (passwords, addresses, cards, generator, security)."""
 import os
+import sys
 import time
 
 from PyQt6.QtCore import Qt, QTimer
@@ -430,7 +431,8 @@ class PasswordsPage(NativePage):
         self.v.addWidget(group(*rows))
         self.v.addWidget(group(
             SetRow("fingerprint", "Ask for your login password", "Before showing, copying, editing or exporting "
-                   "passwords — checked by Linux (PAM), Nacre gets no extra rights", sw("vault.reauth")),
+                   "passwords — checked by " + ("Windows" if sys.platform == "win32" else "Linux (PAM)")
+                   + ", Nacre gets no extra rights", sw("vault.reauth")),
             SetRow("timer", "Then don't ask again for", None,
                    seg("vault.reauth_min", [(1, "1 min"), (5, "5 min"), (15, "15 min"), (0, "Ask every time")])),
             SetRow("key", "Offer to save passwords", None, sw("vault.enabled")),

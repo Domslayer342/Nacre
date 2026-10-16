@@ -66,7 +66,14 @@ AccentColor (polled every 3 s) | XDG portal org.freedesktop.appearance accent-co
 needs a real QDBusMessage slot, defined only when QtDBus exists) → kdeglobals → GNOME gsettings.
 winframe.py (Windows only, UNTESTED on Windows): re-adds WS_THICKFRAME|WS_CAPTION|min/max boxes to the frameless
 window and answers WM_NCCALCSIZE (client = whole window, inset by the frame when maximized) so Aero Snap works.
-Title buttons: 40 px, per-glyph icon sizes (remove 22, crop_square 18, close 24) so they look the same weight. Ideas: Windows Hello / CredUI for the reveal gate, SMTC media keys, tasks via psutil.
+Title buttons: 40 px, per-glyph icon sizes (remove 22, crop_square 18, close 24) so they look the same weight.
+Windows pass (2026-10-16, untested on Windows; user's VM is down): winshell.py = Start menu .lnk via
+PowerShell WScript.Shell (env vars, no quoting), PNG→ICO with QImage, HKCU default-browser registration
+(NacreHTML ProgID + StartMenuInternet + RegisteredApplications; `run.py --install-desktop`, called by the ps1),
+MediaKeys (RegisterHotKey for media VKs only while a tab has media; WM_HOTKEY via a native event filter).
+auth.py: LogonUserW on Windows (failed tries may count toward the account lockout policy). pages: psutil task
+table when there's no /proc (verified identical to /proc on Linux). pwa: Start menu "Nacre Apps" shortcuts,
+path kept in app['lnk']. Google quirk UA claims Firefox on Windows there. Audio confirmed working by the user. Ideas: Windows Hello / CredUI for the reveal gate, SMTC media keys, tasks via psutil.
 
 ## Unverified (needs the user)
 - Google sign-in quirk at the real password step; PAM success path with the real password.

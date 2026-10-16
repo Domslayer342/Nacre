@@ -299,11 +299,36 @@ def _proc(pid):
     return {"ppid": int(st[1]), "ticks": int(st[11]) + int(st[12]), "rss": rss, "type": kind, "sub": sub}
 
 
+def _psutil_processes():
+    """Windows (or anywhere without /proc): the same table from psutil, CPU time as 100 Hz ticks."""
+    try:
+        import psutil
+    except ImportError:
+        return {}
+    out = {}
+    try:
+        me = psutil.Process()
+        for p in [me] + me.children(recursive=True):
+            try:
+                with p.oneshot():
+                    cmd = p.cmdline()
+                    t = p.cpu_times()
+                    out[p.pid] = {"ppid": p.ppid(), "ticks": int((t.user + t.system) * 100),
+                                  "rss": p.memory_info().rss,
+                                  "type": next((a.split("=", 1)[1] for a in cmd if a.startswith("--type=")), ""),
+                                  "sub": next((a.split("=", 1)[1] for a in cmd if a.startswith("--utility-sub-type=")), "")}
+            except psutil.Error:
+                continue
+    except psutil.Error:
+        pass
+    return out
+
+
 def nacre_processes():
     me = os.getpid()
     procs = {}
-    if not os.path.isdir("/proc"):                # Linux only for now
-        return {}
+    if not os.path.isdir("/proc"):
+        return _psutil_processes()
     for d in os.listdir("/proc"):
         if d.isdigit():
             p = _proc(int(d))

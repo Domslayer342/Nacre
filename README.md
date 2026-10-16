@@ -25,9 +25,7 @@ irm https://raw.githubusercontent.com/Domslayer342/Nacre/main/scripts/install-wi
 ```
 or from a clone: `powershell -ExecutionPolicy Bypass -File scripts\install-windows.ps1 -Desktop`.
 It installs Python 3.13 with winget if needed, puts Nacre in `%LOCALAPPDATA%\Programs\Nacre` and adds a Start
-menu shortcut. Run it again to update. Windows support is newer and less tested than Linux: MPRIS media keys,
-the login-password prompt for revealing passwords, and the task manager page are Linux-only, and Widevine comes
-from an installed Chrome/Edge.
+menu shortcut. Run it again to update. On Windows Nacre shows up under Settings → Apps → Default apps, media keys control the playing tab, the password prompt checks your Windows password, installed web apps go in the Start menu under "Nacre Apps", and Widevine comes from an installed Chrome/Edge. Windows is less tested than Linux.
 
 Needs Python 3.12+, PyQt6 + PyQt6-WebEngine (6.8+), `materialyoucolor` and `cryptography` (see
 `requirements.txt`). `qrcode` and `adblock` (adblock-rust, Linux x86_64) are bundled in `nacre/_vendor/`; the

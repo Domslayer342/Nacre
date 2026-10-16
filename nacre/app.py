@@ -81,6 +81,9 @@ class Nacre(QObject):
         if sys.platform.startswith("linux"):
             from .mpris import Mpris
             self.mpris = Mpris(self, self.media)      # media keys / Plasma media controls
+        elif sys.platform == "win32":
+            from .winshell import MediaKeys
+            self.mpris = MediaKeys(app, self.media)   # hardware media keys while a tab plays
         self.rpc = DiscordRPC(self)
         self.save_timer = QTimer(self, interval=30000, timeout=lambda: self.save_session())
         self.save_timer.start()
@@ -219,6 +222,9 @@ def serve(ctx):
 
 def install_desktop():
     """`run.py --install-desktop`: app-menu entry + icon (also lets the desktop portal recognise Nacre)."""
+    if sys.platform == "win32":
+        from .winshell import install
+        return install()
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     share = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
     icon_dir = os.path.join(share, "icons/hicolor/scalable/apps")

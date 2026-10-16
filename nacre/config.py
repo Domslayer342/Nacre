@@ -160,7 +160,7 @@ DEFAULTS = {
     "vault.autofill": True,          # fill automatically when a site has exactly one saved login
     "vault.autofill_forms": True,    # suggest saved addresses / cards
     "vault.autolock_min": 15,        # master-password mode: lock after N idle minutes (0 = never)
-    "vault.reauth": True,            # ask for the Linux login password before revealing saved passwords
+    "vault.reauth": True,            # ask for the login password (Linux PAM / Windows) before revealing saved passwords
     "vault.reauth_min": 5,           # …then trust this session for N minutes (0 = ask every time)
     "vault.gen_length": 20,
     "vault.gen_symbols": True,

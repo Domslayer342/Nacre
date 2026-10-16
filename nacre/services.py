@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import sys
 import re
 import threading
 import time
@@ -367,11 +368,16 @@ def build_engine(texts, paths):
 
 # Google blocks sign-in from "embedded" Chromium (QtWebEngine). Presenting Firefox to the sign-in host only —
 # the same quirk qutebrowser ships — gets past "This browser or app may not be secure".
-FIREFOX_UA = "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0"
+if sys.platform == "win32":
+    FIREFOX_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0"
+    UA_APPVERSION, UA_PLATFORM = "5.0 (Windows)", "Win32"
+else:
+    FIREFOX_UA = "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0"
+    UA_APPVERSION, UA_PLATFORM = "5.0 (X11)", "Linux x86_64"
 QUIRK_HOSTS = {"accounts.google.com"}
 QUIRK_JS = r"""(() => { if (!%HOSTS%.includes(location.hostname)) return;
   const ua = %UA%, nav = Navigator.prototype;
-  for (const [k, v] of [['userAgent', ua], ['appVersion', '5.0 (X11)'], ['vendor', ''], ['platform', 'Linux x86_64']])
+  for (const [k, v] of [['userAgent', ua], ['appVersion', %APPVER%], ['vendor', ''], ['platform', %PLATFORM%]])
     try { Object.defineProperty(nav, k, { get: () => v, configurable: true }); } catch (e) {}
   try { Object.defineProperty(nav, 'userAgentData', { get: () => undefined, configurable: true }); } catch (e) {}
 })();"""
@@ -379,7 +385,8 @@ QUIRK_JS = r"""(() => { if (!%HOSTS%.includes(location.hostname)) return;
 
 def quirk_script():
     return make_script("nacre-quirks", QUIRK_JS.replace("%HOSTS%", json.dumps(sorted(QUIRK_HOSTS)))
-                       .replace("%UA%", json.dumps(FIREFOX_UA)), QWebEngineScript.ScriptWorldId.MainWorld)
+                       .replace("%UA%", json.dumps(FIREFOX_UA)).replace("%APPVER%", json.dumps(UA_APPVERSION))
+                       .replace("%PLATFORM%", json.dumps(UA_PLATFORM)), QWebEngineScript.ScriptWorldId.MainWorld)
 
 
 def make_script(name, src, world):

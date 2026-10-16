@@ -1,12 +1,14 @@
-"""Re-authenticate with the user's own Linux login password (PAM) before revealing saved passwords.
+"""Re-authenticate with the user's own login password before revealing saved passwords.
 
-No privileges are involved: pam_unix checks the caller's own password through the setuid `unix_chkpwd`
-helper, exactly like a screen locker. Nothing runs as root and Nacre never gets elevated rights.
+Linux: PAM. No privileges are involved: pam_unix checks the caller's own password through the setuid
+`unix_chkpwd` helper, exactly like a screen locker. Nothing runs as root and Nacre never gets elevated rights.
+Windows: LogonUserW checks the account password (a Microsoft account's password works too; a PIN doesn't).
 """
 import ctypes
 import ctypes.util
 import getpass
 import os
+import sys
 import threading
 import time
 
@@ -55,12 +57,33 @@ def service():
     return next((s for s in SERVICES if os.path.exists(f"/etc/pam.d/{s}")), None)
 
 
+WINDOWS = sys.platform == "win32"
+
+
 def available():
+    if WINDOWS:
+        return True
     return _lib()[0] is not None and service() is not None
+
+
+def check_windows_password(password, user=None):
+    from ctypes import wintypes
+    advapi, kernel = ctypes.windll.advapi32, ctypes.windll.kernel32
+    advapi.LogonUserW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD,
+                                  wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)]
+    token = wintypes.HANDLE()
+    domain = os.environ.get("USERDOMAIN") or "."
+    # LOGON32_LOGON_INTERACTIVE = 2, LOGON32_PROVIDER_DEFAULT = 0
+    ok = advapi.LogonUserW(user or getpass.getuser(), domain, password, 2, 0, ctypes.byref(token))
+    if ok:
+        kernel.CloseHandle(token)
+    return bool(ok)
 
 
 def check_password(password, user=None):
     """True if `password` is the current user's login password. Blocking (PAM delays failures ~2 s)."""
+    if WINDOWS:
+        return check_windows_password(password, user)
     pam, libc = _lib()
     svc = service()
     if pam is None or svc is None:
@@ -125,10 +148,11 @@ class AuthFlyout(Flyout):
         self.win, self.gate, self.fn = win, gate_, fn
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.lay.addWidget(Label("Confirm it's you", "onSurface", 18, 500))
-        self.lay.addWidget(Label(f"Enter the login password for “{getpass.getuser()}” to {reason}.",
+        kind = "Windows password" if WINDOWS else "login password"
+        self.lay.addWidget(Label(f"Enter the {kind} for “{getpass.getuser()}” to {reason}.",
                                  "onSurfaceVariant", 13, wrap=True))
         self.lay.addSpacing(8)
-        self.field = TextField("", "Login password", "lock")
+        self.field = TextField("", "Windows password" if WINDOWS else "Login password", "lock")
         self.field.edit.setEchoMode(self.field.edit.EchoMode.Password)
         self.field.edit.returnPressed.connect(self._go)
         self.lay.addWidget(self.field)
@@ -161,7 +185,7 @@ class AuthFlyout(Flyout):
         self.ok.setEnabled(True)
         self.field.edit.clear()
         if not ok:
-            self.err.setText("That isn't your login password")
+            self.err.setText("That isn't your Windows password" if WINDOWS else "That isn't your login password")
             self.field.edit.setFocus()
             return
         self.gate.grant()

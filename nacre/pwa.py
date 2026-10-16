@@ -89,7 +89,29 @@ def desktop_path(app):
     return os.path.join(SHARE, "applications", f"nacre-app-{app['id']}.desktop")
 
 
+def _write_lnk(app):
+    """Windows: a Start menu shortcut in "Nacre Apps" (named after the app; the path is kept to remove it later)."""
+    from . import winshell
+    _remove_lnk(app)
+    name = "".join(c for c in app["name"] if c not in '<>:"/\\|?*').strip() or app["id"]
+    lnk = os.path.join(winshell.start_menu(), "Nacre Apps", name + ".lnk")
+    ico = winshell.to_ico(icon_path(app), os.path.join(ICON_DIR, app["id"] + ".ico"))
+    args = ["--app", app["id"]] if app["window"] else [f'"{app["url"]}"']
+    if winshell.make_shortcut(lnk, args, ico, f"{app['name']} · installed with Nacre"):
+        app["lnk"] = lnk
+        app["launcher"] = True
+
+
+def _remove_lnk(app):
+    try:
+        os.remove(app.pop("lnk"))
+    except (KeyError, OSError):
+        pass
+
+
 def write_desktop(app):
+    if sys.platform == "win32":
+        return _write_lnk(app)
     os.makedirs(os.path.dirname(desktop_path(app)), exist_ok=True)
     run = os.path.join(ROOT, "run.py")
     exe = f"{sys.executable} {run} --app {app['id']}" if app["window"] else f"{sys.executable} {run} {app['url']}"
@@ -108,6 +130,10 @@ StartupWMClass=nacre
 
 
 def remove_desktop(app):
+    if sys.platform == "win32":
+        _remove_lnk(app)
+        app["launcher"] = False
+        return
     try:
         os.remove(desktop_path(app))
     except OSError:

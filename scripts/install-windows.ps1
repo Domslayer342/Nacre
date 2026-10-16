@@ -136,6 +136,9 @@ if (-not $NoShortcut) {
     }
 }
 
+Step "Registering Nacre as a browser (Settings > Apps > Default apps)"
+& $vpy (Join-Path $Root "run.py") --install-desktop
+
 Write-Host ""
 Write-Host "Nacre is installed in $Root" -ForegroundColor Green
 Write-Host "Start it from the Start menu, or run:"
