@@ -52,7 +52,9 @@ site sets data-nacre-off and drops the generic style. Verified on generic ads, i
 Guards: config dirs → %LOCALAPPDATA%\Nacre\{config,share,cache}; MPRIS only on Linux (QtDBus not imported);
 single-instance uses a named pipe; Discord RPC uses \\.\pipe\discord-ipc-N; tasks page empty without /proc;
 Widevine found from Chrome/Edge/Brave (installer disabled); PAM gate is skipped (no reauth on Windows);
-adblock comes from PyPI. Ideas: Windows Hello / CredUI for the reveal gate, SMTC media keys, tasks via psutil.
+adblock comes from PyPI. The frameless window is opaque on Windows
+(Chromium output in a layered/translucent window came out see-through on the user's Windows 10); test that
+path on Linux with NACRE_OPAQUE=1. Ideas: Windows Hello / CredUI for the reveal gate, SMTC media keys, tasks via psutil.
 
 ## Unverified (needs the user)
 - Google sign-in quirk at the real password step; PAM success path with the real password.

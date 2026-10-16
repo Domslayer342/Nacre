@@ -602,8 +602,12 @@ class BrowserWindow(QWidget):
         theme.target_changed.connect(guard(self, lambda: self.setWindowIcon(app_icon(theme.target))))
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.frameless = cfg.get("ui.frameless")
+        # Windows can't composite Chromium's output into a layered (translucent) window: the page comes out
+        # see-through, so the window stays opaque there and skips the rounded outer corners
+        self.translucent = self.frameless and os.name != "nt" and not os.environ.get("NACRE_OPAQUE")
         if self.frameless:
             self.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+        if self.translucent:
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setMouseTracking(True)
         if self.frameless:
@@ -1279,7 +1283,7 @@ class BrowserWindow(QWidget):
     # ── layout / frame ──
     def _apply_layout(self):
         full = self.isFullScreen()
-        edge = self.EDGE if self.frameless and not (self.isMaximized() or full) else 0
+        edge = self.EDGE if self.translucent and not (self.isMaximized() or full) else 0
         self.layout().setContentsMargins(edge, edge, edge, edge)
         floating = cfg.get("ui.floating_card") and not full
         self.card_wrap.layout().setContentsMargins(*((8, 0, 8, 8) if floating else (0, 0, 0, 0)))
@@ -1300,7 +1304,7 @@ class BrowserWindow(QWidget):
     def paintEvent(self, e):
         p = painter(self)
         r = QRectF(self.rect())
-        if self.frameless and not (self.isMaximized() or self.isFullScreen()):
+        if self.translucent and not (self.isMaximized() or self.isFullScreen()):
             m = self.EDGE - 2
             p.setBrush(theme["surfaceContainer"])
             p.drawRoundedRect(r.adjusted(m, m, -m, -m), theme.r(14), theme.r(14))
