@@ -115,3 +115,9 @@ path kept in app['lnk']. Google quirk UA claims Firefox on Windows there. Audio 
 - Not yet pushed into the workflow: a Linux job (AppImage + tar.gz). Ready: packaging/smoke.sh (xvfb), spec is
   cross-platform, config.launch_command() handles $APPIMAGE / frozen for .desktop entries.
 - install-windows.ps1 font-in-use error is fixed (user hit it); user should re-run the installer.
+- RESULT of run 38872930819: with NACRE_NO_WINFRAME=1 + NACRE_NO_MEDIAKEYS=1 Nacre runs fine on the runner (fonts OK).
+  So the crash is one of the Python native hooks: winshell.MediaKeys.nativeEventFilter or the
+  BrowserWindow.nativeEvent override (earlier run with only winframe off still crashed → MediaKeys is the prime
+  suspect; its filter runs for every message and returns (False, 0) where PyQt6 types the result as sip.voidptr).
+  Next: test each hook alone in CI; consider handling WM_HOTKEY without a Python filter (e.g. a hidden
+  QWidget's nativeEvent, or RegisterHotKey on a real hwnd). (old-commit variant exited 2 = script path issue, ignore.)
